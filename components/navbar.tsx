@@ -34,11 +34,16 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:block">
-          <Button asChild className="bg-primary hover:bg-primary/90">
-            <a href="https://discord.com/oauth2/authorize?client_id=1441694586333429923&permissions=2147993664&integration_type=0&scope=bot+applications.commands" target="_blank" rel="noopener noreferrer">
-              Invite Bot
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/logs" className="text-sm font-medium text-transparent hover:text-muted-foreground transition-colors">
+              Logs
+            </Link>
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <a href={`https://discord.com/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '1441694586333429923'}&permissions=2147993664&integration_type=0&scope=bot+applications.commands`} target="_blank" rel="noopener noreferrer">
+                Invite Bot
+              </a>
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu Button */}
@@ -65,7 +70,7 @@ export function Navbar() {
               Support
             </Link>
             <Button asChild className="w-full bg-primary hover:bg-primary/90">
-              <a href="https://discord.com/oauth2/authorize?client_id=1441694586333429923&permissions=2147993664&integration_type=0&scope=bot+applications.commands" target="_blank" rel="noopener noreferrer">
+              <a href={`https://discord.com/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '1441694586333429923'}&permissions=2147993664&integration_type=0&scope=bot+applications.commands`} target="_blank" rel="noopener noreferrer">
                 Invite Bot
               </a>
             </Button>
