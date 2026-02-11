@@ -23,7 +23,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 
-type ChannelName = "boss-alerts" | "card-roles" | "bot-commands"
+type ChannelName = "boss-alerts" | "bot-commands"
 
 interface ChannelContent {
   name: string
@@ -42,8 +42,7 @@ export function HeroSection() {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveChannel((prev) => {
-        if (prev === "boss-alerts") return "card-roles"
-        if (prev === "card-roles") return "bot-commands"
+        if (prev === "boss-alerts") return "bot-commands"
         return "boss-alerts"
       })
     }, 3000)
@@ -67,27 +66,6 @@ export function HeroSection() {
               <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
                 <div><span style={{ color: "#949ba4" }}>Boss:</span></div>
                 <div><span className="text-white">Shadow Dragon</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    "card-roles": {
-      name: "card-roles",
-      description: "Card drop role pings",
-      messages: (
-        <div className="flex items-start gap-2 group text-xs">
-          <Image src="/rushia.png" alt="Rushia" width={32} height={32} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-[#f2f3f5]">Rushia</span>
-              <span className="px-1 py-0.5 rounded text-[8px] font-semibold bg-[#5865f2] text-white">BOT</span>
-            </div>
-            <div className="mt-1 rounded overflow-hidden border-l-2 border-[#ed4245] bg-[#2b2d31] p-2">
-              <p className="font-semibold text-white text-xs">Legendary Card!</p>
-              <div className="mt-1 text-xs">
-                <span className="text-[#faa61a]">Naruto Uzumaki</span>
               </div>
             </div>
           </div>
@@ -225,10 +203,6 @@ export function HeroSection() {
                         <div onClick={() => setActiveChannel("boss-alerts")} className={`flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer transition-colors ${activeChannel === "boss-alerts" ? "bg-[#404249] text-[#f2f3f5]" : "text-[#949ba4] hover:bg-[#35363c] hover:text-[#dbdee1]"}`}>
                           <Hash className="h-3 w-3" style={{ color: activeChannel === "boss-alerts" ? "#f2f3f5" : "#80848e" }} />
                           <span className="text-xs">boss</span>
-                        </div>
-                        <div onClick={() => setActiveChannel("card-roles")} className={`flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer transition-colors ${activeChannel === "card-roles" ? "bg-[#404249] text-[#f2f3f5]" : "text-[#949ba4] hover:bg-[#35363c] hover:text-[#dbdee1]"}`}>
-                          <Hash className="h-3 w-3" style={{ color: activeChannel === "card-roles" ? "#f2f3f5" : "#80848e" }} />
-                          <span className="text-xs">cards</span>
                         </div>
                         <div onClick={() => setActiveChannel("bot-commands")} className={`flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer transition-colors ${activeChannel === "bot-commands" ? "bg-[#404249] text-[#f2f3f5]" : "text-[#949ba4] hover:bg-[#35363c] hover:text-[#dbdee1]"}`}>
                           <Hash className="h-3 w-3" style={{ color: activeChannel === "bot-commands" ? "#f2f3f5" : "#80848e" }} />

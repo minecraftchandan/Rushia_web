@@ -48,9 +48,8 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const SHORT_KEY = process.env.NEXT_PUBLIC_LOGS_SHORT_KEY || 'rushia-admin';
-  const STORED_HASH = process.env.NEXT_PUBLIC_API_KEY;
-  const USERNAME = process.env.NEXT_PUBLIC_LOGS_USERNAME || 'admin';
+  const SHORT_KEY = 'rushia-admin';
+  const USERNAME = 'diablo8246';
 
   useEffect(() => {
     const isValid = getSessionWithExpiry();
@@ -77,16 +76,25 @@ export default function LogsPage() {
       return;
     }
 
-    const hashedInput = await hashKey(key);
-    const hashedShortKey = await hashKey(SHORT_KEY);
-    
-    if (key === SHORT_KEY || hashedInput === hashedShortKey || hashedInput === STORED_HASH || key === STORED_HASH) {
-      setSessionWithExpiry('true', 15);
-      setIsAuthed(true);
-      setError('');
-    } else {
-      setError('Invalid access key');
-      setTimeout(() => router.push('/'), 1500);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shortKey: key })
+      });
+      
+      if (res.ok) {
+        const { apiKey } = await res.json();
+        sessionStorage.setItem('api_key', apiKey);
+        setSessionWithExpiry('true', 15);
+        setIsAuthed(true);
+        setError('');
+      } else {
+        setError('Invalid access key');
+        setTimeout(() => router.push('/'), 1500);
+      }
+    } catch {
+      setError('Authentication failed');
     }
   };
 
