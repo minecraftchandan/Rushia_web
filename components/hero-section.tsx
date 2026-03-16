@@ -1,24 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { Button } from "@/components/ui/button"
-import {
-  Zap,
-  Bell,
-  Search,
-  Hash,
-  Volume2,
-  ChevronDown,
-  Plus,
-  Settings,
-  Mic,
-  Headphones,
-  Gift,
-  ImageIcon,
-  Smile,
-  PlusCircle,
-} from "lucide-react"
+import { Zap, Bell, Search, Hash, ChevronDown, Plus, Mic, Headphones, Gift, PlusCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
@@ -106,6 +90,37 @@ export function HeroSection() {
     },
   }
 
+  if (!mounted) {
+    return (
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid lg:grid-cols-2 gap-8 items-center max-w-7xl mx-auto">
+            <div className="space-y-6">
+              <div className="h-7 w-36 rounded-full bg-muted animate-pulse" />
+              <div className="space-y-3">
+                <div className="h-14 w-3/4 rounded-lg bg-muted animate-pulse" />
+                <div className="h-14 w-1/2 rounded-lg bg-muted animate-pulse" />
+              </div>
+              <div className="h-16 w-full rounded-lg bg-muted animate-pulse" />
+              <div className="flex gap-3">
+                <div className="h-12 w-36 rounded-lg bg-muted animate-pulse" />
+                <div className="h-12 w-36 rounded-lg bg-muted animate-pulse" />
+              </div>
+              <div className="flex gap-4">
+                <div className="h-5 w-24 rounded bg-muted animate-pulse" />
+                <div className="h-5 w-24 rounded bg-muted animate-pulse" />
+                <div className="h-5 w-24 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+            <div className="relative -ml-16 hidden lg:block">
+              <div className="h-96 w-full rounded-xl bg-muted animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -122,12 +137,10 @@ export function HeroSection() {
               <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                 Discord Bot for Luvi
               </span>
-              
               <h1 className="text-5xl font-bold leading-tight">
                 Never Miss Another
                 <span className="block text-primary">Boss or Card</span>
               </h1>
-              
               <p className="text-lg text-muted-foreground max-w-md">
                 Rushia automatically detects boss spawns and card drops, sends you reminders, and helps you search through 1000+ cards instantly.
               </p>
@@ -140,9 +153,7 @@ export function HeroSection() {
                 </a>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/features">
-                  View Commands
-                </Link>
+                <Link href="/features">View Commands</Link>
               </Button>
             </div>
 
@@ -192,7 +203,6 @@ export function HeroSection() {
                     <span className="font-semibold text-white">Luvi</span>
                     <ChevronDown className="h-3 w-3 text-white/60" />
                   </div>
-
                   <div className="flex-1 overflow-y-auto p-1 text-xs">
                     <div className="mb-1">
                       <div className="flex items-center gap-0.5 px-1 py-1 font-semibold uppercase tracking-wide cursor-pointer hover:text-white/80" style={{ color: "#949ba4" }}>
@@ -211,7 +221,6 @@ export function HeroSection() {
                       </div>
                     </div>
                   </div>
-
                   <div className="h-9 px-1 flex items-center gap-1" style={{ backgroundColor: "#232428" }}>
                     <div className="relative">
                       <div className="w-6 h-6 rounded-full bg-[#5865f2] flex items-center justify-center text-white text-xs font-semibold">Y</div>
@@ -229,9 +238,7 @@ export function HeroSection() {
                     <Hash className="h-3.5 w-3.5 text-[#80848e]" />
                     <span className="font-semibold text-white">{channelContents[activeChannel].name}</span>
                   </div>
-
                   <div className="flex-1 overflow-y-auto p-2">{channelContents[activeChannel].messages}</div>
-
                   <div className="p-1.5">
                     <div className="flex items-center gap-1 px-2 py-1.5 rounded text-xs" style={{ backgroundColor: "#383a40" }}>
                       <PlusCircle className="h-3 w-3 text-[#b5bac1] cursor-pointer hover:text-white/80" />
