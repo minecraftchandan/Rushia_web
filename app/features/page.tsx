@@ -1,46 +1,73 @@
 "use client"
 
+import { useState, useRef } from "react"
+import { motion, useInView } from "motion/react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
-import { Settings, User, HelpCircle, Search, Package, Heart, Clock, BarChart2, ChevronRight } from "lucide-react"
+import {
+  Settings, User, Search, Package, Heart,
+  BarChart2, Zap, Bell, Shield, Smile,
+  ChevronDown, Terminal,
+} from "lucide-react"
 
-const categories = [
-  { id: "server-config", label: "Server Config", icon: Settings },
-  { id: "personal",      label: "Personal",      icon: User },
-  { id: "help",          label: "Help",           icon: HelpCircle },
-  { id: "card-search",   label: "Card Search",    icon: Search },
-  { id: "inventory",     label: "Inventory",      icon: Package },
-  { id: "wishlist",      label: "Wishlist",       icon: Heart },
-  { id: "role-delay",    label: "Role Delay",     icon: Clock },
-  { id: "quick",         label: "Quick",          icon: BarChart2 },
+const NAV = [
+  { id: "slash-commands", label: "Slash Commands", icon: Zap },
+  { id: "server-config",  label: "Server Config",  icon: Settings },
+  { id: "personal",       label: "Personal",       icon: User },
+  { id: "card-search",    label: "Card Search",    icon: Search },
+  { id: "inventory",      label: "Inventory",      icon: Package },
+  { id: "wishlist",       label: "Wishlist",       icon: Heart },
+  { id: "prefix-admin",   label: "Admin Commands", icon: Shield },
+  { id: "quick",          label: "Quick Commands", icon: BarChart2 },
+  { id: "reactions",      label: "Reactions",      icon: Smile },
+  { id: "auto-features",  label: "Auto Features",  icon: Bell },
 ]
 
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+function AnimatedItem({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { amount: 0.15, once: false })
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ scale: 0.7, opacity: 0 }}
+      animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      {children}
+    </motion.div>
+  )
 }
 
-function CodeBlock({ children }: { children: string }) {
+function Code({ label, children }: { label?: string; children: string }) {
   return (
-    <pre className="overflow-x-auto rounded-lg bg-muted/40 border border-border/50 px-4 py-3 text-sm">
-      <code className="text-foreground/90 whitespace-pre-wrap font-mono">{children}</code>
-    </pre>
+    <div className="rounded-lg overflow-hidden border border-white/6">
+      {label && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-white/4 border-b border-white/6">
+          <Terminal className="h-3 w-3 text-muted-foreground/50" />
+          <span className="text-[10px] font-medium text-muted-foreground/60 tracking-wider uppercase">{label}</span>
+        </div>
+      )}
+      <pre className="overflow-x-auto bg-[#0a0a0c] px-4 py-3 text-xs lg:text-sm font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
+        {children}
+      </pre>
+    </div>
   )
 }
 
 function Tag({ children }: { children: string }) {
   return (
-    <code className="inline-block rounded-md bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-semibold text-primary">
+    <span className="inline-flex items-center gap-1 rounded bg-primary/8 px-1.5 py-0.5 text-[10px] font-mono font-medium text-primary/80 border border-primary/15">
       {children}
-    </code>
+    </span>
   )
 }
 
-function FeatureList({ items }: { items: string[] }) {
+function Bullets({ items }: { items: string[] }) {
   return (
-    <ul className="grid gap-1.5 sm:grid-cols-2">
+    <ul className="grid gap-1.5 grid-cols-1 sm:grid-cols-2">
       {items.map((item) => (
-        <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ChevronRight className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+        <li key={item} className="flex items-baseline gap-2 text-xs lg:text-sm text-muted-foreground">
+          <span className="text-primary/40 text-[10px] shrink-0">—</span>
           {item}
         </li>
       ))}
@@ -48,422 +75,341 @@ function FeatureList({ items }: { items: string[] }) {
   )
 }
 
-function SectionHeader({ id, icon: Icon, title, badge }: { id: string; icon: any; title: string; badge: string }) {
+function Accordion({ title, badge, children }: { title: string; badge?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false)
   return (
-    <div id={id} className="scroll-mt-24 flex items-center gap-4 mb-6 pb-4 border-b border-border/40">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
-        <Icon className="h-5 w-5 text-primary" />
+    <AnimatedItem>
+      <div className={`border-b border-border/20 last:border-0 transition-colors duration-150 ${open ? "bg-white/[0.02]" : ""}`}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between gap-4 py-3.5 px-1 text-left group"
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <span className={`text-sm lg:text-base font-medium transition-colors ${open ? "text-foreground" : "text-foreground/80 group-hover:text-foreground"}`}>
+              {title}
+            </span>
+            {badge && <Tag>{badge}</Tag>}
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground/40 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="pb-5 px-1 space-y-4">
+            {children}
+          </div>
+        )}
       </div>
-      <div>
-        <h2 className="text-xl font-bold text-foreground">{title}</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">{badge}</p>
-      </div>
-    </div>
+    </AnimatedItem>
   )
 }
 
-function CommandCard({ command }: { command: any }) {
+function Section({ id, icon: Icon, title, badge, children, flash }: {
+  id: string; icon: any; title: string; badge: string; children: React.ReactNode; flash: boolean
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { amount: 0.05, once: false })
   return (
-    <div className="rounded-xl border border-border/40 bg-card/40 hover:bg-card/70 transition-colors p-5 space-y-4">
-      {command.name && <Tag>{command.name}</Tag>}
-      <div>
-        <h3 className="text-base font-semibold text-foreground">{command.title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{command.description}</p>
+    <motion.div
+      ref={ref}
+      id={id}
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className={`scroll-mt-28 lg:scroll-mt-24 transition-all duration-700 ${flash ? "ring-1 ring-primary/30 rounded-2xl shadow-[0_0_48px_-8px_hsl(var(--primary)/0.18)]" : ""}`}
+    >
+      {/* Section header */}
+      <div className="flex items-start justify-between gap-4 mb-1 px-1">
+        <div className="flex items-center gap-3">
+          <Icon className="h-4 w-4 text-primary/70 shrink-0 mt-0.5" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground/60 uppercase tracking-widest">{title}</h2>
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground/40 font-medium mt-0.5 shrink-0 hidden sm:block">{badge}</span>
       </div>
 
-      {"usage" in command && command.usage && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usage</p>
-          <CodeBlock>{command.usage}</CodeBlock>
-        </div>
-      )}
+      {/* Divider */}
+      <div className="h-px bg-border/30 mb-1 mx-1" />
 
-      {"subcommands" in command && command.subcommands && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subcommands</p>
-          {command.subcommands.map((sub: any, i: number) => (
-            <div key={i} className="rounded-lg bg-muted/30 border border-border/30 p-3 space-y-2">
-              <p className="text-sm font-medium text-foreground">{sub.title}</p>
-              <CodeBlock>{sub.usage}</CodeBlock>
-              {sub.description && <p className="text-xs text-muted-foreground">{sub.description}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {"examples" in command && command.examples && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Examples</p>
-          {command.examples.map((ex: any, i: number) => (
-            <div key={i} className="space-y-1.5">
-              <p className="text-xs text-muted-foreground">{ex.title}</p>
-              <CodeBlock>{ex.code}</CodeBlock>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {"features" in command && command.features && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Features</p>
-          <FeatureList items={command.features} />
-        </div>
-      )}
-
-      {"benefits" in command && command.benefits && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Benefits</p>
-          <ul className="grid gap-1.5 sm:grid-cols-2">
-            {command.benefits.map((b: string) => (
-              <li key={b} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 text-xs">✓</span>{b}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {"example" in command && command.example && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{command.example.title}</p>
-          <CodeBlock>{command.example.content}</CodeBlock>
-        </div>
-      )}
-
-      {"notificationTypes" in command && command.notificationTypes && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notification Types</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {command.notificationTypes.map((t: any) => (
-              <div key={t.name} className="rounded-lg bg-muted/30 border border-border/30 p-3">
-                <code className="text-xs font-semibold text-primary">{t.name}</code>
-                <p className="mt-1 text-xs text-muted-foreground">{t.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {"categories" in command && command.categories && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Help Categories</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {command.categories.map((cat: any) => (
-              <div key={cat.name} className="flex items-center gap-2 rounded-lg bg-muted/30 border border-border/30 p-3">
-                <span className="text-base">{cat.emoji}</span>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{cat.name}</p>
-                  <p className="text-xs text-muted-foreground">{cat.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {"searchFeatures" in command && command.searchFeatures && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Search Features</p>
-          <FeatureList items={command.searchFeatures} />
-        </div>
-      )}
-
-      {"outputExamples" in command && command.outputExamples && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Output Example</p>
-          {command.outputExamples.map((ex: any, i: number) => (
-            <div key={i} className="space-y-1.5">
-              <p className="text-xs text-muted-foreground">{ex.title}</p>
-              <CodeBlock>{ex.content}</CodeBlock>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {"steps" in command && command.steps && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">How to Use</p>
-          <ol className="space-y-2">
-            {command.steps.map((step: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {"generatedExample" in command && command.generatedExample && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Generated Command</p>
-          <CodeBlock>{command.generatedExample}</CodeBlock>
-        </div>
-      )}
-
-      {"notificationInfo" in command && command.notificationInfo && (
-        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
-          <p className="text-sm font-semibold text-foreground">🔔 How Wishlist Notifications Work</p>
-          <ol className="space-y-3">
-            {command.notificationInfo.steps.map((step: any, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-sm">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">{i + 1}</span>
-                <div>
-                  <span className="font-semibold text-foreground">{step.label} </span>
-                  {step.desc.split("\n").map((line: string, j: number) => (
-                    <span key={j} className="block text-muted-foreground text-sm">{line}</span>
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </div>
+      {/* Accordion list — no card wrapper, just clean rows */}
+      <div className="px-1">
+        {children}
+      </div>
+    </motion.div>
   )
 }
-
-const sections = [
-  {
-    id: "server-config", icon: Settings,
-    title: "Server Configuration", badge: "Requires: Manage Roles Permission",
-    commands: [
-      {
-        name: "/set-boss-role [role]",
-        title: "Configure Boss Spawn Notifications",
-        description: "Set up automatic notifications when bosses spawn in the Luvi game. The bot will ping the specified role with boss details.",
-        usage: "/set-boss-role role:@BossHunters",
-        features: ["Detects all boss tiers (Tier 1, 2, 3)", "Instant notifications with boss name and tier", "Works with legacy single-role system", "Leave role empty to disable"],
-        example: { title: "Example Output", content: "@BossHunters Tier 3 Boss Spawned!\nBoss: Shadow Dragon" },
-      },
-      {
-        name: "/multi-roles",
-        title: "Advanced Multi-Role Notification System",
-        description: "Upgrade to tier-specific and rarity-specific roles. Perfect for large servers with dedicated teams.",
-        subcommands: [
-          { title: "Enable Multi-Role System", usage: "/multi-roles enable", description: "Activates the advanced notification system." },
-          { title: "Configure Boss Tier Roles", usage: "/multi-roles set-boss tier:tier1 role:@Tier1Hunters\n/multi-roles set-boss tier:tier2 role:@Tier2Elite\n/multi-roles set-boss tier:tier3 role:@Tier3Legends" },
-          { title: "Configure Card Rarity Roles", usage: "/multi-roles set-card rarity:common role:@CommonCollectors\n/multi-roles set-card rarity:rare role:@RareCollectors\n/multi-roles set-card rarity:legendary role:@LegendaryElite" },
-          { title: "Disable Multi-Role System", usage: "/multi-roles disable", description: "Returns to single-role system." },
-        ],
-        benefits: ["Targeted notifications per tier/rarity", "Reduce notification spam", "Organize community by interest", "Easy toggle between modes"],
-      },
-    ],
-  },
-  {
-    id: "personal", icon: User,
-    title: "Personal Settings", badge: "Customize your preferences",
-    commands: [
-      {
-        name: "/notifications",
-        title: "Manage Personal Notification Preferences",
-        description: "Customize which reminders you receive and how. All settings are per-user and work across all servers.",
-        subcommands: [
-          { title: "View Current Settings", usage: "/notifications view", description: "Displays your current notification preferences." },
-          { title: "Configure Notification Types", usage: "/notifications set type:expedition enabled:true\n/notifications set type:stamina enabled:true\n/notifications set type:raid enabled:true\n/notifications set type:raidSpawnReminder enabled:true" },
-          { title: "DM Notification Settings", usage: "/dm enable type:expedition\n/dm enable type:stamina\n/dm disable type:expedition" },
-        ],
-        notificationTypes: [
-          { name: "expedition", desc: "Reminded when expedition cards are ready to claim" },
-          { name: "stamina", desc: "Alert when stamina reaches 100%" },
-          { name: "raid", desc: "Notified when raid fatigue wears off" },
-          { name: "raidSpawnReminder", desc: "30-minute cooldown reminder for raid spawns" },
-        ],
-        features: ["Per-user customization", "Server or DM notifications", "Disable specific types", "Persists across all servers"],
-      },
-    ],
-  },
-  {
-    id: "help", icon: HelpCircle,
-    title: "Help & Information", badge: "Get help and learn about the bot",
-    commands: [
-      {
-        name: "/help",
-        title: "Interactive Help Menu",
-        description: "Access comprehensive bot documentation through an interactive dropdown menu system.",
-        usage: "/help",
-        categories: [
-          { emoji: "🤖", name: "Overview", desc: "Bot introduction and feature summary" },
-          { emoji: "📋", name: "Admin Commands", desc: "Server configuration guide" },
-          { emoji: "👤", name: "User Commands", desc: "Personal settings and preferences" },
-          { emoji: "🔍", name: "Card Search", desc: "How to search and find cards" },
-          { emoji: "📦", name: "Inventory Helper", desc: "Inventory management tools" },
-          { emoji: "🔧", name: "Auto Features", desc: "Automatic detection systems" },
-          { emoji: "💡", name: "Tips & Tricks", desc: "Pro tips and best practices" },
-        ],
-        features: ["Interactive dropdown navigation", "Organized by category", "Ephemeral responses", "Detailed examples"],
-      },
-    ],
-  },
-  {
-    id: "card-search", icon: Search,
-    title: "Card Search", badge: "No permissions required — Available to everyone",
-    commands: [
-      {
-        name: "@bot f <query>  or  @bot find <query>",
-        title: "Search Through 1000+ Cards Instantly",
-        description: "Powerful card search with fuzzy matching and multi-term support.",
-        examples: [
-          { title: "Single card search", code: "@Rushia f naruto\n@Rushia find luffy\n@Rushia f bleach ice" },
-          { title: "Multi-card search (comma-separated)", code: "@Rushia f naruto,luffy,goku\n@Rushia find shanks,zoro,sanji" },
-          { title: "Advanced filtering", code: "@Rushia f fire duelist        → Fire element duelist cards\n@Rushia find support light     → Light element support cards\n@Rushia f naruto legendary     → Legendary Naruto cards" },
-        ],
-        searchFeatures: ["Fuzzy matching (typo-tolerant)", "Multi-term filtering", "Instant results with card details", "Card images and full stats", "Batch search with comma separation"],
-        outputExamples: [
-          { title: "Single Result", content: "Card: Naruto Uzumaki\nSeries: Naruto\nElement: Fire\nRole: Duelist\n[Card Image]" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "inventory", icon: Package,
-    title: "Inventory Management", badge: "Mention-based commands",
-    commands: [
-      {
-        name: "React with 🔍 on Inventory",
-        title: "Advanced Inventory Command Generator",
-        description: "Build complex inventory search commands with an interactive interface.",
-        steps: [
-          "React with 🔍 on your inventory",
-          "Select cards from dropdown (or use \"Select All\")",
-          "Click \"Add\" to add selected cards",
-          "Click \"Next Section\" to add filters",
-          "Select element, grade, rarity filters",
-          "Get generated command ready to use",
-        ],
-        generatedExample: "@Luvi inv -name Naruto,Luffy,Goku -element fire,dark -grade a,s -rarity legendary,exotic",
-        features: ["Select All option for bulk adding", "Multi-select filters", "Real-time command preview", "Works with inventory pagination"],
-      },
-    ],
-  },
-  {
-    id: "wishlist", icon: Heart,
-    title: "Wishlist Commands", badge: "Mention-based commands — Available to everyone",
-    commands: [
-      {
-        name: "@bot wa <card name>",
-        title: "Add Cards to Your Wishlist",
-        description: "Add single or multiple cards to your wishlist. Get notified when they spawn in raids.",
-        examples: [
-          { title: "Add a single card", code: "@Rushia wa naruto" },
-          { title: "Add multiple cards at once", code: "@Rushia wa naruto,luffy,goku" },
-        ],
-        features: ["Fuzzy card name matching", "Bulk add with comma separation", "Get raid spawn notifications", "Persists across all servers"],
-      },
-      {
-        name: "@bot wl",
-        title: "View Wishlists",
-        description: "View your own wishlist or another user's wishlist (bot owner only).",
-        examples: [
-          { title: "View your wishlist", code: "@Rushia wl" },
-          { title: "View another user's wishlist (owner only)", code: "@Rushia wl @user\n@Rushia wl <userId>" },
-        ],
-        features: ["Shows element emojis per card", "Displays total card count", "Owner can view any user's wishlist"],
-      },
-      {
-        name: "@bot wr <card name>",
-        title: "Remove Cards from Your Wishlist",
-        description: "Remove single or multiple cards from your wishlist.",
-        examples: [
-          { title: "Remove a single card", code: "@Rushia wr naruto" },
-          { title: "Remove multiple cards", code: "@Rushia wr naruto,luffy,goku" },
-        ],
-        features: ["Single or bulk removal", "Fuzzy name matching", "Instant confirmation"],
-      },
-      {
-        name: "",
-        title: "How Notifications Work",
-        description: "Once you have cards in your wishlist, Rushia automatically notifies you when they spawn in a raid.",
-        notificationInfo: {
-          steps: [
-            { label: "Add cards", desc: "to your wishlist using `wa`" },
-            { label: "When someone spawns a raid", desc: "with your wishlisted card, you get:\n📢 Channel ping: \"@user Your wishlisted raid CardName 🔥 has spawned!\"\n📩 Personal DM: \"Your wishlist raid CardName 🔥 has spawned by @spawner!\"" },
-            { label: "Never miss", desc: "your wanted cards again!" },
-          ],
-        },
-      },
-    ],
-  },
-  {
-    id: "role-delay", icon: Clock,
-    title: "Role Delay Commands", badge: "Mention-based commands — Manage notification timing",
-    commands: [
-      {
-        name: "@bot delay <roleId> <time>",
-        title: "Set Role Ping Delays",
-        description: "Set a delay in milliseconds before pinging a specific role for boss spawns. Useful for staggering notifications.",
-        examples: [
-          { title: "Set delay (full form)", code: "@Rushia delay 123456789012345678 5000" },
-          { title: "Set delay (short form)", code: "@Rushia d 123456789012345678 3000" },
-          { title: "View all configured delays", code: "@Rushia delays" },
-        ],
-        features: ["Per-role delay configuration", "Millisecond precision", "Short form `d` alias", "View all delays with `delays`"],
-      },
-    ],
-  },
-  {
-    id: "quick", icon: BarChart2,
-    title: "Quick Commands", badge: "No prefix needed — Type directly in chat",
-    commands: [
-      {
-        name: "rlb",
-        title: "Drop Leaderboard",
-        description: "View the server's drop leaderboard showing top droppers and statistics.",
-        usage: "rlb",
-        features: ["Top droppers ranking", "Server-wide statistics", "No prefix or mention needed", "Real-time data"],
-      },
-    ],
-  },
-]
 
 export default function FeaturesPage() {
+  const [active, setActive] = useState("slash-commands")
+  const [flash, setFlash] = useState<string | null>(null)
+
+  function go(id: string) {
+    setActive(id)
+    setFlash(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    setTimeout(() => setFlash(null), 1200)
+  }
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen relative">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-10" style={{ backgroundImage: "url(/img.png)" }} />
+      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-background/60 via-background/80 to-background" />
       <Navbar />
 
-      <section className="relative py-16 md:py-24">
-        <div className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-10" style={{ backgroundImage: "url(/img.png)" }} />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
+      {/* Mobile sticky pill nav */}
+      <div className="lg:hidden sticky top-16 z-40 bg-background/95 backdrop-blur-md border-b border-border/15">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-4 py-3">
+          {NAV.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => go(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                active === id
+                  ? "bg-primary/12 text-primary"
+                  : "text-muted-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3 w-3 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <div className="container mx-auto px-4 max-w-5xl">
+      {/* Body */}
+      <div className="container mx-auto px-4 sm:px-6 max-w-5xl pb-32 pt-8">
+        <div className="flex gap-12 items-start">
 
-          {/* Hero */}
-          <div className="text-center mb-14">
-            <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">Command Reference</span>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Every Command, Explained</h1>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto">Complete guide to unlock the full potential of Rushia Helper Bot</p>
-          </div>
+          {/* Desktop sidebar — minimal, no card wrapper */}
+          <aside className="hidden lg:flex flex-col w-44 shrink-0 sticky top-24">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 mb-3 px-2">Categories</p>
+            <nav className="flex flex-col">
+              {NAV.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => go(id)}
+                  className={`relative flex items-center gap-2.5 px-2 py-2 text-sm transition-all text-left rounded-md ${
+                    active === id
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground/50 hover:text-muted-foreground font-normal"
+                  }`}
+                >
+                  {active === id && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
+                  )}
+                  <Icon className={`h-3.5 w-3.5 shrink-0 ${active === id ? "text-primary" : "text-muted-foreground/30"}`} />
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-          {/* Nav Pills */}
-          <div className="flex flex-wrap justify-center gap-2 mb-14">
-            {categories.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => scrollTo(id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-card/50 hover:bg-primary/10 hover:border-primary/50 text-sm font-medium text-muted-foreground hover:text-primary transition-all"
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Content */}
+          <div className="flex-1 min-w-0 relative">
+            <div className="pointer-events-none absolute top-0 left-0 right-0 h-10 z-10 bg-gradient-to-b from-background to-transparent" />
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 z-10 bg-gradient-to-t from-background to-transparent" />
+            <div className="space-y-12 py-2">
 
-          {/* Sections */}
-          <div className="space-y-14">
-            {sections.map((section) => (
-              <div key={section.id}>
-                <SectionHeader id={section.id} icon={section.icon} title={section.title} badge={section.badge} />
-                <div className="space-y-4">
-                  {section.commands.map((cmd, i) => (
-                    <CommandCard key={i} command={cmd} />
+              <Section id="slash-commands" icon={Zap} title="Slash Commands" badge="Type / in Discord" flash={flash === "slash-commands"}>
+                <Accordion title="Interactive Help Menu" badge="/help">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Opens a dropdown help menu covering all bot features. Ephemeral — only you can see it.</p>
+                  <Bullets items={["Dropdown category navigation", "Covers all bot features", "Ephemeral response", "Detailed examples per category"]} />
+                </Accordion>
+                <Accordion title="Toggle Luvi Bot Integration" badge="/config">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Enable or disable Luvi bot integration for your server. Admin only.</p>
+                  <Bullets items={["Admin only", "Toggle on/off instantly", "Server-scoped setting"]} />
+                </Accordion>
+                <Accordion title="Notification Preferences" badge="/notifications">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">View and configure personal notification settings.</p>
+                  <Code label="usage">{"/notifications view\n/notifications set <type> <enabled>"}</Code>
+                  <div className="grid gap-2 grid-cols-2 sm:grid-cols-3">
+                    {[
+                      { name: "expedition", desc: "Expedition completes" },
+                      { name: "stamina",    desc: "Stamina refills" },
+                      { name: "raid",       desc: "Raid fatigue recovers" },
+                      { name: "raidSpawn",  desc: "30-min after raid spawn" },
+                      { name: "drop",       desc: "1-hour after drop" },
+                    ].map((t) => (
+                      <div key={t.name} className="rounded-md border border-border/20 bg-muted/5 px-3 py-2">
+                        <code className="text-[11px] font-semibold text-primary/80">{t.name}</code>
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">{t.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Accordion>
+                <Accordion title="Multi-Role Boss Notifications" badge="/multi-roles">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Configure separate roles per boss tier. Requires Manage Roles.</p>
+                  <Code label="usage">{"/multi-roles enable\n/multi-roles disable\n/multi-roles set-boss <tier> [role]"}</Code>
+                  <Bullets items={["Supports Tier 1-4", "Leave role blank to remove", "Toggle single/multi mode", "Requires Manage Roles"]} />
+                </Accordion>
+                <Accordion title="View Boss Role Configuration" badge="/view-settings">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">View all tier role assignments and multi-role status for your server.</p>
+                  <Bullets items={["Shows all tier role assignments", "Displays multi-role status", "Server-specific"]} />
+                </Accordion>
+                <Accordion title="Send a Suggestion" badge="/suggestion <text>">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Send a suggestion directly to the bot owner. Max 1000 characters.</p>
+                  <Code>{"/suggestion Your idea here..."}</Code>
+                </Accordion>
+              </Section>
+
+              <Section id="server-config" icon={Settings} title="Server Configuration" badge="Requires Manage Roles" flash={flash === "server-config"}>
+                <Accordion title="Configure Boss Spawn Notifications" badge="/set-boss-role [role]">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Set a role to ping when bosses spawn. Leave empty to disable.</p>
+                  <Code label="usage">{"/set-boss-role role:@BossHunters"}</Code>
+                  <Bullets items={["Detects Tier 1, 2, 3 bosses", "Instant notifications", "Leave empty to disable"]} />
+                </Accordion>
+                <Accordion title="Advanced Multi-Role System" badge="/multi-roles">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Tier-specific roles for large servers with dedicated teams.</p>
+                  <Code label="example">{"/multi-roles set-boss tier:tier1 role:@Tier1Hunters\n/multi-roles set-boss tier:tier2 role:@Tier2Elite\n/multi-roles set-boss tier:tier3 role:@Tier3Legends"}</Code>
+                  <Bullets items={["Targeted notifications per tier", "Reduce notification spam", "Easy toggle between modes"]} />
+                </Accordion>
+              </Section>
+
+              <Section id="personal" icon={User} title="Personal Settings" badge="Per-user preferences" flash={flash === "personal"}>
+                <Accordion title="Manage Notification Preferences" badge="/notifications">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Per-user settings that persist across all servers.</p>
+                  <Code label="usage">{"/notifications view\n/notifications set type:expedition enabled:true\n/notifications set type:stamina enabled:true\n/notifications set type:raid enabled:true"}</Code>
+                  <Bullets items={["Per-user customization", "Server or DM notifications", "Disable specific types", "Persists across all servers"]} />
+                </Accordion>
+                <Accordion title="DM Delivery Toggle" badge="/dm enable|disable <type>">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Switch reminder delivery between DM and channel on a per-type basis.</p>
+                  <Code label="usage">{"/dm enable <type>\n/dm disable <type>"}</Code>
+                  <div className="grid gap-2 grid-cols-2">
+                    {[
+                      { name: "expedition", desc: "Cards ready to claim" },
+                      { name: "stamina",    desc: "Stamina refill" },
+                      { name: "raidSpawn",  desc: "30-min raid spawn" },
+                      { name: "drop",       desc: "1-hour drop reminder" },
+                    ].map((t) => (
+                      <div key={t.name} className="rounded-md border border-border/20 bg-muted/5 px-3 py-2">
+                        <code className="text-[11px] font-semibold text-primary/80">{t.name}</code>
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">{t.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Bullets items={["enable delivers via DM", "disable delivers in channel", "Per-type control", "Takes effect immediately"]} />
+                </Accordion>
+              </Section>
+
+              <Section id="card-search" icon={Search} title="Card Search" badge="No permissions needed" flash={flash === "card-search"}>
+                <Accordion title="Search 1000+ Cards Instantly" badge="rf / @bot f <query>">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Fuzzy matching, multi-term support, and comma-separated batch search.</p>
+                  <Code label="examples">{"@Rushia f naruto\n@Rushia f naruto,luffy,goku\n@Rushia f fire duelist\n@Rushia f naruto legendary"}</Code>
+                  <Bullets items={["Fuzzy matching (typo-tolerant)", "Multi-term filtering", "Batch search with commas", "Card images and full stats"]} />
+                </Accordion>
+              </Section>
+
+              <Section id="inventory" icon={Package} title="Inventory Management" badge="Reaction-based" flash={flash === "inventory"}>
+                <Accordion title="Interactive Command Builder" badge="React on inventory embed">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">React with the search emoji on any inventory embed to open an interactive filter builder.</p>
+                  <ol className="space-y-2">
+                    {["React on your inventory embed", "Select cards (or use \"Select All\")", "Click \"Add\" to add selected cards", "Click \"Next Section\" for filters", "Select element, grade, rarity", "Copy the generated command"].map((s, i) => (
+                      <li key={i} className="flex items-start gap-3 text-xs lg:text-sm text-muted-foreground">
+                        <span className="text-primary/40 font-mono text-[10px] mt-0.5 shrink-0 w-4">{String(i + 1).padStart(2, "0")}</span>
+                        {s}
+                      </li>
+                    ))}
+                  </ol>
+                  <Code label="generated">{"@Luvi inv -name Naruto,Luffy,Goku -element fire,dark -grade a,s -rarity legendary,exotic"}</Code>
+                </Accordion>
+              </Section>
+
+              <Section id="wishlist" icon={Heart} title="Wishlist Commands" badge="@Bot mention commands" flash={flash === "wishlist"}>
+                <Accordion title="Add Cards to Wishlist" badge="rwa / @bot wa <name>">
+                  <Code label="usage">{"@Rushia wa naruto\n@Rushia wa naruto,luffy,goku"}</Code>
+                  <Bullets items={["Fuzzy card name matching", "Bulk add with commas", "Max 10 cards", "Raid spawn notifications"]} />
+                </Accordion>
+                <Accordion title="View Wishlist" badge="rwl / @bot wl [@user]">
+                  <Code label="usage">{"@Rushia wl\n@Rushia wl @user   <- owner only"}</Code>
+                  <Bullets items={["Shows element emojis", "Displays total count", "Owner can view any user"]} />
+                </Accordion>
+                <Accordion title="Remove from Wishlist" badge="rwr / @bot wr <name>">
+                  <Code label="usage">{"@Rushia wr naruto\n@Rushia wr naruto,luffy,goku"}</Code>
+                  <Bullets items={["Single or bulk removal", "Fuzzy name matching", "Instant confirmation"]} />
+                </Accordion>
+                <Accordion title="How Wishlist Notifications Work">
+                  <div className="rounded-lg border border-border/20 bg-muted/5 p-4 space-y-3">
+                    <p className="text-xs font-medium text-foreground/70">When a wishlisted raid spawns you receive:</p>
+                    <div className="space-y-2.5">
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-wider mt-0.5 w-16 shrink-0">Channel</span>
+                        <p className="text-xs text-muted-foreground font-mono">@you Your wishlisted raid CardName has spawned!</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-wider mt-0.5 w-16 shrink-0">DM</span>
+                        <p className="text-xs text-muted-foreground font-mono">Your wishlist raid CardName has spawned by @spawner!</p>
+                      </div>
+                    </div>
+                  </div>
+                </Accordion>
+              </Section>
+
+              <Section id="prefix-admin" icon={Shield} title="Admin & Owner Commands" badge="r prefix or @Bot" flash={flash === "prefix-admin"}>
+                <Accordion title="Set Role Ping Delays" badge="@bot delay <roleId> <time>">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Stagger boss ping notifications per role. Max 59s.</p>
+                  <Code label="usage">{"@Rushia delay 123456789012345678 5s\n@Rushia delay 123456789012345678 1m\n@Rushia delays   <- view all"}</Code>
+                  <Bullets items={["Per-role configuration", "Max 59s (5s, 1m format)", "Short form d alias", "View all with delays"]} />
+                </Accordion>
+                <Accordion title="Set POG Alert Channel" badge="rsetpog / @bot setpog <#channel>">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Configure the channel for auto-forwarded POG (heart value over 99) alerts.</p>
+                  <Code label="usage">{"rsetpog #pog-alerts\n@Rushia setpog #pog-alerts"}</Code>
+                </Accordion>
+                <Accordion title="Toggle Luvi Integration" badge="rconfig / @bot config">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Enable or disable Luvi bot integration for the server.</p>
+                  <Code label="usage">{"rconfig\n@Rushia config"}</Code>
+                </Accordion>
+              </Section>
+
+              <Section id="quick" icon={BarChart2} title="Quick Commands" badge="No prefix needed" flash={flash === "quick"}>
+                <Accordion title="Drop Leaderboard" badge="rlb">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">View the server drop leaderboard with top droppers and real-time stats.</p>
+                  <Code label="usage">{"rlb"}</Code>
+                  <Bullets items={["Top droppers ranking", "Server-wide statistics", "No prefix needed", "Real-time data"]} />
+                </Accordion>
+              </Section>
+
+              <Section id="reactions" icon={Smile} title="Reaction-Based Features" badge="React to Luvi messages" flash={flash === "reactions"}>
+                <Accordion title="Extract Card IDs" badge="React ID on any Luvi message">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Automatically extracts and posts all card IDs as a comma-separated list, ready to paste into inventory commands.</p>
+                  <Bullets items={["Works on any Luvi message", "Comma-separated output", "Instant extraction", "Useful for inventory commands"]} />
+                </Accordion>
+                <Accordion title="Scrape Cards by Rarity" badge="React pencil on inventory embed">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Scrapes all cards from an inventory embed grouped by rarity, with pagination.</p>
+                  <Bullets items={["Groups cards by rarity", "Paginated output", "Quick bulk export"]} />
+                </Accordion>
+                <Accordion title="Interactive Command Builder" badge="React search on inventory embed">
+                  <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed">Opens an interactive builder for advanced inventory filtering.</p>
+                  <Code label="generated">{"@Luvi inv -name Naruto,Luffy -element fire -grade s -rarity legendary"}</Code>
+                </Accordion>
+              </Section>
+
+              <Section id="auto-features" icon={Bell} title="Automatic Background Features" badge="Always running" flash={flash === "auto-features"}>
+                <div className="grid gap-px bg-border/15 rounded-lg overflow-hidden border border-border/15">
+                  {[
+                    { name: "Boss Ping",          desc: "Detects Luvi boss spawns, pings configured role(s) with optional delay" },
+                    { name: "Stamina Reminder",    desc: "DM or channel reminder when stamina refills to 100%" },
+                    { name: "Expedition Reminder", desc: "Reminder when expedition completes and cards are ready" },
+                    { name: "Raid Reminder",       desc: "Notifies when raid fatigue recovers" },
+                    { name: "Raid Spawn Reminder", desc: "30-min reminder after spawning a raid boss" },
+                    { name: "Drop Reminder",       desc: "1-hour reminder after using the drop command" },
+                    { name: "POG Alerts",          desc: "Auto-detects heart values over 99, forwards to configured channel" },
+                    { name: "Drop Tracking",       desc: "Tracks all drops and exotic/legendary counts per user per server" },
+                    { name: "Raid Wishlist Ping",  desc: "Pings users in channel and DM when their wishlisted raid spawns" },
+                    { name: "Series Heart Values", desc: "Shows heart values on series selection embeds automatically" },
+                  ].map((f) => (
+                    <AnimatedItem key={f.name}>
+                      <div className="flex items-start gap-4 bg-background px-4 py-3 hover:bg-muted/5 transition-colors">
+                        <span className="text-[10px] font-semibold text-primary/50 uppercase tracking-wider mt-0.5 w-32 shrink-0 leading-relaxed">{f.name}</span>
+                        <p className="text-xs lg:text-sm text-muted-foreground/70 leading-relaxed">{f.desc}</p>
+                      </div>
+                    </AnimatedItem>
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              </Section>
 
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       <Footer />
     </main>

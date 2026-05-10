@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter, Geist_Mono } from "next/font/google"
 import { Suspense } from "react"
 import { Loading } from "@/components/loading"
+import { DiscordWidget } from "@/components/discord-widget"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   description:
     "The ultimate Discord bot companion for Luvi Card Game. Boss notifications, card spawns, reminders, and powerful search tools.",
   keywords: ["Discord bot", "Luvi", "card game", "boss notifications", "card spawns"],
+  icons: { icon: "/rushia.png", apple: "/rushia.png" },
     generator: 'v0.app'
 }
 
@@ -27,6 +29,7 @@ export default function RootLayout({
         <Suspense fallback={<Loading />}>
           {children}
         </Suspense>
+        <DiscordWidget />
       </body>
     </html>
   )
