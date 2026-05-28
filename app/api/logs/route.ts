@@ -5,107 +5,117 @@ const MONGODB_URI = process.env.MONGODB_URI || '';
 const API_KEY = process.env.API_KEY || '';
 
 const LogSchema = new mongoose.Schema({
-  level: String,
-  message: String,
-  timestamp: Date,
-  userId: String,
-  guildId: String,
-  channelId: String,
-  metadata: Object,
-});
+  level:     { type: String },
+  message:   { type: String },
+  timestamp: { type: Date },
+  guildId:   { type: String },
+  userId:    { type: String },
+  channelId: { type: String },
+  event:     { type: String },
+  category:  { type: String },
+  action:    { type: String },
+  type:      { type: String },
+  method:    { type: String },
+  error:     { type: String },
+  metadata:  { type: mongoose.Schema.Types.Mixed },
+}, { strict: false });
 
-const Log = mongoose.models.Log || mongoose.model('Log', LogSchema, 'logs');
+// force use of 'luvi' db and 'logs' collection
+let Log: mongoose.Model<any>;
+try {
+  Log = mongoose.model('LuviLog');
+} catch {
+  Log = mongoose.model('LuviLog', LogSchema, 'logs');
+}
 
 async function connectDB() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, { dbName: 'luvi' });
   }
 }
 
-function categorizeLog(message: string, metadata?: any): string {
-  if (metadata?.category === 'RAID_SPAWN') return 'RAID_SPAWN';
-  if (metadata?.category === 'SYSTEM') return 'SYSTEM';
-  if (metadata?.category === 'DROP' || metadata?.category === 'DROP_COUNT' || metadata?.category === 'RARITY_DROP') return 'DROP';
-  if (metadata?.category === 'REMINDER') return 'REMINDER';
-  
-  const msg = message.toLowerCase();
-  if (msg.includes('raid') || msg.includes('boss')) return 'RAID_SPAWN';
-  if (msg.includes('reminder')) return 'REMINDER';
-  if (msg.includes('expedition')) return 'EXPEDITION';
-  if (msg.includes('drop')) return 'DROP';
-  if (msg.includes('bot_ready') || msg.includes('settings') || msg.includes('scheduler')) return 'SYSTEM';
-  
+function deriveCategory(message: string, metadata?: any): string {
+  if (metadata?.category) return metadata.category;
+  const m = (message || '').toLowerCase();
+  if (m.includes('boss') || m.includes('tier')) return 'BOSS';
+  if (m.includes('reminder') || m.includes('stamina') || m.includes('expedition') || m.includes('raid')) return 'REMINDER';
+  if (m.includes('drop')) return 'DROP';
+  if (m.includes('ready') || m.includes('bot_ready') || m.includes('scheduler') || m.includes('system')) return 'SYSTEM';
+  if (m.includes('wishlist')) return 'WISHLIST';
   return 'GENERAL';
 }
 
-function getReminderType(metadata?: any): string | undefined {
-  return metadata?.type;
+function cleanMetadata(metadata: any): Record<string, any> | null {
+  if (!metadata) return null;
+  // filter out char-array keys (0,1,2...) — these are stringified errors stored wrong
+  const cleaned: Record<string, any> = {};
+  for (const [k, v] of Object.entries(metadata)) {
+    if (isNaN(Number(k))) cleaned[k] = v;
+  }
+  return Object.keys(cleaned).length > 0 ? cleaned : null;
 }
 
 export async function GET(request: NextRequest) {
   try {
     const apiKey = request.headers.get('x-api-key');
-    if (apiKey !== API_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
+    if (apiKey !== API_KEY) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     await connectDB();
-    
-    const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const level = searchParams.get('level');
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
-    const userId = searchParams.get('userId');
-    const reminderType = searchParams.get('reminderType');
+
+    const sp = request.nextUrl.searchParams;
+    const limit  = Math.min(parseInt(sp.get('limit')  || '50'), 200);
+    const offset = parseInt(sp.get('offset') || '0');
+    const level    = sp.get('level');
+    const category = sp.get('category');
+    const search   = sp.get('search');
+    const userId   = sp.get('userId');
+    const guildId  = sp.get('guildId');
+    const range    = sp.get('range');
+
+    const rangeMs: Record<string, number> = { '1h': 3600000, '6h': 21600000, '24h': 86400000, '7d': 604800000 };
 
     const query: any = {};
-    if (level) query.level = level;
-    if (userId) query.userId = userId;
-    if (search) {
-      query.$or = [
-        { message: { $regex: search, $options: 'i' } },
-        { userId: { $regex: search, $options: 'i' } },
-        { guildId: { $regex: search, $options: 'i' } },
-      ];
-    }
+    if (level)   query.level = level.toUpperCase();
+    if (userId)  query.userId = userId;
+    if (guildId) query.guildId = guildId;
+    if (range && rangeMs[range]) query.timestamp = { $gte: new Date(Date.now() - rangeMs[range]) };
+    if (search)  query.$or = [
+      { message:  { $regex: search, $options: 'i' } },
+      { userId:   { $regex: search, $options: 'i' } },
+      { guildId:  { $regex: search, $options: 'i' } },
+      { 'metadata.category': { $regex: search, $options: 'i' } },
+    ];
 
-    const [logs, total] = await Promise.all([
-      Log.find(query)
-        .sort({ timestamp: -1 })
-        .skip(offset)
-        .limit(limit)
-        .lean(),
-      Log.countDocuments(query)
+    const [rawLogs, total] = await Promise.all([
+      Log.find(query).sort({ timestamp: -1 }).skip(offset).limit(limit).lean(),
+      Log.countDocuments(query),
     ]);
 
-    const formattedLogs = logs.map(log => {
-      const cat = categorizeLog(log.message, log.metadata);
-      const remType = getReminderType(log.metadata);
-      return {
-        id: log._id.toString(),
+    const logs = rawLogs
+      .filter((log: any) => {
+        if (!category) return true;
+        return (log.category || deriveCategory(log.message, log.metadata)) === category;
+      })
+      .map((log: any) => ({
+        id:        log._id.toString(),
+        level:     (log.level || 'INFO').toUpperCase(),
+        message:   log.message || log.event || '',
         timestamp: log.timestamp,
-        level: log.level || 'INFO',
-        category: cat,
-        message: log.message,
-        userId: log.userId,
-        guildId: log.guildId,
+        guildId:   log.guildId,
+        userId:    log.userId,
         channelId: log.channelId,
-        reminderType: remType,
-        action: log.metadata?.action,
-        method: log.metadata?.method,
-        error: log.metadata?.error,
-      };
-    }).filter(log => {
-      if (category && log.category !== category) return false;
-      if (reminderType && log.reminderType !== reminderType) return false;
-      return true;
-    });
+        event:     log.event,
+        category:  log.category || deriveCategory(log.message, log.metadata),
+        action:    log.action,
+        type:      log.type,
+        method:    log.method,
+        error:     log.error,
+        metadata:  cleanMetadata(log.metadata),
+      }));
 
-    return NextResponse.json({ logs: formattedLogs, total: category || reminderType ? formattedLogs.length : total });
+    return NextResponse.json({ logs, total });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Logs API error:', error);
     return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
   }
 }
@@ -113,15 +123,11 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const apiKey = request.headers.get('x-api-key');
-    if (apiKey !== API_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
+    if (apiKey !== API_KEY) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     await Log.deleteMany({});
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to clear logs' }, { status: 500 });
   }
 }
