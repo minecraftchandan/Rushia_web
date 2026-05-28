@@ -14,7 +14,6 @@ const LogSchema = new mongoose.Schema({
   metadata:  { type: mongoose.Schema.Types.Mixed },
 }, { strict: false });
 
-// force use of 'luvi' db and 'logs' collection
 let Log: mongoose.Model<any>;
 try {
   Log = mongoose.model('LuviLog');
@@ -23,9 +22,12 @@ try {
 }
 
 async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, { dbName: 'luvi' });
-  }
+  if (mongoose.connection.readyState >= 1) return;
+  await mongoose.connect(MONGODB_URI, {
+    dbName: 'luvi',
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+  });
 }
 
 function deriveCategory(message: string, metadata?: any): string {
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ logs, total });
   } catch (error) {
     console.error('Logs API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch logs', detail: String(error) }, { status: 500 });
   }
 }
 
