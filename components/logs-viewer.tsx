@@ -44,10 +44,14 @@ const LogRow = memo(({ log, expanded, onToggle, flash }: { log: Log; expanded: b
 
   const fullDoc = {
     id: log.id, timestamp: log.timestamp, level: log.level,
-    event: log.event, category: log.category, action: log.action,
-    type: log.type, method: log.method, message: log.message, error: log.error,
+    message: log.message,
     userId: log.userId, guildId: log.guildId, channelId: log.channelId,
-    metadata: log.metadata,
+    metadata: {
+      category: log.category, action: log.action, type: log.type,
+      method: log.method, error: log.error,
+      userId: log.userId, guildId: log.guildId, channelId: log.channelId,
+      ...log.metadata,
+    },
   };
 
   return (

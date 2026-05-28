@@ -11,12 +11,6 @@ const LogSchema = new mongoose.Schema({
   guildId:   { type: String },
   userId:    { type: String },
   channelId: { type: String },
-  event:     { type: String },
-  category:  { type: String },
-  action:    { type: String },
-  type:      { type: String },
-  method:    { type: String },
-  error:     { type: String },
   metadata:  { type: mongoose.Schema.Types.Mixed },
 }, { strict: false });
 
@@ -94,22 +88,21 @@ export async function GET(request: NextRequest) {
     const logs = rawLogs
       .filter((log: any) => {
         if (!category) return true;
-        return (log.category || deriveCategory(log.message, log.metadata)) === category;
+        return (log.metadata?.category || deriveCategory(log.message, log.metadata)) === category;
       })
       .map((log: any) => ({
         id:        log._id.toString(),
         level:     (log.level || 'INFO').toUpperCase(),
-        message:   log.message || log.event || '',
+        message:   log.message || '',
         timestamp: log.timestamp,
-        guildId:   log.guildId,
-        userId:    log.userId,
-        channelId: log.channelId,
-        event:     log.event,
-        category:  log.category || deriveCategory(log.message, log.metadata),
-        action:    log.action,
-        type:      log.type,
-        method:    log.method,
-        error:     log.error,
+        guildId:   log.guildId   || log.metadata?.guildId,
+        userId:    log.userId    || log.metadata?.userId,
+        channelId: log.channelId || log.metadata?.channelId,
+        category:  log.metadata?.category || deriveCategory(log.message, log.metadata),
+        action:    log.metadata?.action,
+        type:      log.metadata?.type,
+        method:    log.metadata?.method,
+        error:     log.metadata?.error,
         metadata:  cleanMetadata(log.metadata),
       }));
 
